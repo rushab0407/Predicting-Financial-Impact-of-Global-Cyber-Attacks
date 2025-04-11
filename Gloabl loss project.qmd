@@ -1,0 +1,65 @@
+---
+title: "Untitled"
+format: pdf
+editor: visual
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+data <- read.csv("/Users/rushabarram/Documents/Global_Cybersecurity_Threats_2015-2024.csv")
+
+# Group by Year and count
+attack_counts <- data %>%
+  group_by(Year) %>%
+  summarise(Attack_Count = n())
+# Plot
+ggplot(attack_counts, aes(x = factor(Year), y = Attack_Count)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Cyber Attacks per Year", x = "Year", y = "Attack Count") +
+  theme_minimal()
+
+# Rename for easier access
+names(data)[names(data) == "Financial.Loss..in.Million..."] <- "Financial_Loss"
+
+# Sum financial loss by year
+loss_by_year <- data %>%
+  group_by(Year) %>%
+  summarise(Total_Loss = sum(Financial_Loss, na.rm = TRUE))
+
+head(data)
+# Plot
+ggplot(loss_by_year, aes(x = factor(Year), y = Total_Loss)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  labs(title = "Total Financial Loss by Year", x = "Year", y = "Loss (Million $)") +
+  theme_minimal()
+
+top_attacks <- data %>%
+  group_by(`Attack.Type`) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  head(5)
+
+ggplot(top_attacks, aes(x = reorder(`Attack.Type`, Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  coord_flip() +
+  labs(title = "Top 5 Cyber Attack Types", x = "Attack Type", y = "Count") +
+  theme_minimal()
+# Summarize data by year
+yearly_data <- data %>%
+  group_by(Year) %>%
+  summarise(
+    Attacks = n(),
+    Total_Loss = sum(Financial_Loss, na.rm = TRUE),
+    Users_Affected = sum(`Number.of.Affected.Users`, na.rm = TRUE)
+  )
+# Convert to time series
+loss_ts <- ts(yearly_data$Total_Loss, start = min(yearly_data$Year), frequency = 1)
+library(forecast)
+
+model <- auto.arima(loss_ts)
+forecasted <- forecast(model, h = 10)  # Forecast 5 years ahead
+plot(forecasted)
+
+```
